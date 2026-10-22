@@ -32,15 +32,15 @@ st.sidebar.error(f"🛑 Hard Cutoff Limit: {HARD_TIME_LIMIT}s")
 # --- MULTI-VIDEO POOL MATRIX (Counterbalancing) ---
 VIDEO_POOL = {
     "Clip_A": {
-        "url": "https://github.com",
+        "url": "https://github.com/Suibichen/forensic-memory-app/raw/refs/heads/main/Security%20Camera%20Alleyway%20Chase.mp4", # Replace with your original clip link
         "jacket": "Red", "jeans": "Blue", "cap": "Black", "shoes": "Green"
     },
     "Clip_B": {
-        "url": "https://github.com",
+        "url": "https://github.com/Suibichen/forensic-memory-app/raw/refs/heads/main/Alleyway%20Chase.mp4", # Replace with Video Variant 2 link
         "jacket": "Blue", "jeans": "Black", "cap": "Green", "shoes": "Red"
     },
     "Clip_C": {
-        "url": "https://github.com",
+        "url": "https://github.com/Suibichen/forensic-memory-app/raw/refs/heads/main/Screen_Recording_20261022_202310_Chrome.mp4", # Replace with Video Variant 3 link
         "jacket": "Green", "jeans": "Red", "cap": "Blue", "shoes": "Black"
     }
 }
