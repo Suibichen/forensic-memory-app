@@ -24,12 +24,13 @@ if "played_clips" not in st.session_state:
 st.sidebar.header("👤 Profile Settings")
 current_user = st.sidebar.selectbox("Select Active Agent Name:", ["Agent You", "Agent Sister", "Guest Agent"])
 
-STRESS_THRESHOLD = 10.0
-HARD_TIME_LIMIT = 20.0    
-st.sidebar.info(f"⏱️ High-Confidence Limit: {STRESS_THRESHOLD}s")
-st.sidebar.error(f"🛑 Hard Cutoff Limit: {HARD_TIME_LIMIT}s")
+# FIXED LOCK-IN VALUE: Set default parameters strictly to 10.0 seconds
+STRESS_THRESHOLD = st.sidebar.slider("High-Confidence Time Limit (Seconds)", 5.0, 20.0, 10.0)
 
-# --- MULTI-VIDEO POOL MATRIX (Counterbalancing) ---
+HARD_TIME_LIMIT = 20.0    
+st.sidebar.error(f"🛑 CRITICAL TIME BOUND: {HARD_TIME_LIMIT}s")
+
+# --- MULTI-VIDEO POOL MATRIX ---
 VIDEO_POOL = {
     "Clip_A": {
         "url": "https://github.com/Suibichen/forensic-memory-app/raw/refs/heads/main/Security%20Camera%20Alleyway%20Chase.mp4", # Replace with your original clip link
@@ -60,7 +61,7 @@ if st.session_state.stage == "viewing":
         st.session_state.active_video_index = random.choice(available_clips)
         st.session_state.played_clips.append(st.session_state.active_video_index)
     
-    st.info("🎯 Ready to stream security footage. The video will permanently self-destruct after 5 seconds.")
+    st.info("🎯 Ready to stream security footprint footage. The video will permanently self-destruct after 5 seconds.")
     if st.button("🎬 Stream Evidence (Single Exposure)"):
         st.session_state.stage = "video_playing"
         st.rerun()
@@ -76,56 +77,16 @@ elif st.session_state.stage == "video_playing":
     st.session_state.stage = "interrogating"
     st.rerun()
 
-# --- STEP 3: INTERROGATION SYSTEM WITH INTEGRATED AUTO-SUBMIT MATRIX ---
+# --- STEP 3: INTERROGATION SYSTEM WITH CLOCK LOOP ---
 elif st.session_state.stage == "interrogating":
     st.subheader(f"Step 2: Cross-Examination Registry ({current_user})")
-    st.error("🔒 EVIDENCE DESTRUCTED: The video element has been erased to secure trial validity.")
+    st.error("🔒 EVIDENCE DESTRUCTED: The source video file has been systematically deleted from memory.")
     
-    # Calculate current system runtime bounds
-    reaction_time = round(time.time() - st.session_state.start_time, 2)
-    time_remaining = max(0.0, HARD_TIME_LIMIT - reaction_time)
+    elapsed_time = time.time() - st.session_state.start_time
+    time_remaining = max(0.0, HARD_TIME_LIMIT - elapsed_time)
+    timer_placeholder = st.empty()
     
-    if time_remaining > 0:
-        st.warning(f"⏳ CRITICAL TIMER LOGGING ACTIVE: {round(time_remaining, 1)} seconds remaining!")
-    else:
-        st.error("💥 SYSTEM LOCKOUT BOUNDS REACHED")
-        
-    # Process dynamic timeout constraint if no click occurs within the absolute window
-    if reaction_time > HARD_TIME_LIMIT:
-        st.session_state.last_score = {"correct": 0, "pct": 0, "time": HARD_TIME_LIMIT, "confidence": "Expired (Timeout)", "timeout": True}
-        st.session_state.project_data.append({
-            "Trial": len(st.session_state.project_data) + 1, "Agent": current_user, "Clip Code": st.session_state.active_video_index,
-            "Reaction Time (Seconds)": HARD_TIME_LIMIT, "Accuracy Score (%)": 0, "Confidence Metric": "Expired (Timeout)", "Correct Answers": "0/4"
-        })
-        st.session_state.stage = "results"
-        st.rerun()
-
     active_clip = VIDEO_POOL[st.session_state.active_video_index]
-    
-    # Option A: Stable Rapid Voice Dictation Terminal
-    st.markdown("### 🎙️ Option A: Rapid Voice Dictation Terminal")
-    audio_file = st.audio_input("Tap to record your forensic sequence voice log:")
-    
-    # AUTOMATION PROTOCOL OPTIMIZATION: Instantly logs response vectors when audio is committed
-    if audio_file and st.session_state.stage == "interrogating":
-        voice_reaction_time = round(time.time() - st.session_state.start_time, 2)
-        st.session_state.last_score = {
-            "correct": "Voice Logged", "pct": 100, "time": voice_reaction_time, "confidence": "Voice Analysis Active", "timeout": False
-        }
-        st.session_state.project_data.append({
-            "Trial": len(st.session_state.project_data) + 1,
-            "Agent": current_user,
-            "Clip Code": st.session_state.active_video_index,
-            "Reaction Time (Seconds)": voice_reaction_time,
-            "Accuracy Score (%)": 100,
-            "Confidence Metric": "Voice (Verified)" if voice_reaction_time <= STRESS_THRESHOLD else "Voice (Delayed)",
-            "Correct Answers": "Voice Submitted"
-        })
-        st.session_state.stage = "results"
-        st.rerun()
-
-    st.markdown("---")
-    st.markdown("### 📝 Option B: Rapid-Click Interface")
     with st.form("forensic_matrix_form"):
         col_a, col_b = st.columns(2)
         with col_a:
@@ -138,30 +99,54 @@ elif st.session_state.stage == "interrogating":
         submitted = st.form_submit_button("💥 SUBMIT RECORDED VERDICT")
         
         if submitted:
-            click_reaction_time = round(time.time() - st.session_state.start_time, 2)
-            correct_count = 0
-            if ans_jacket == active_clip["jacket"]: correct_count += 1
-            if ans_jeans == active_clip["jeans"]: correct_count += 1
-            if ans_cap == active_clip["cap"]: correct_count += 1
-            if ans_shoes == active_clip["shoes"]: correct_count += 1
-            accuracy_pct = int((correct_count / 4) * 100)
-            confidence = "High (Automatic)" if click_reaction_time <= STRESS_THRESHOLD else "Low (Delayed)"
+            reaction_time = round(time.time() - st.session_state.start_time, 2)
+            
+            if reaction_time > HARD_TIME_LIMIT:
+                accuracy_pct, correct_count = 0, 0
+                confidence = "Expired (Timeout)"
+                timeout_flag = True
+            else:
+                timeout_flag = False
+                correct_count = 0
+                if ans_jacket == active_clip["jacket"]: correct_count += 1
+                if ans_jeans == active_clip["jeans"]: correct_count += 1
+                if ans_cap == active_clip["cap"]: correct_count += 1
+                if ans_shoes == active_clip["shoes"]: correct_count += 1
+                accuracy_pct = int((correct_count / 4) * 100)
+                
+                # Active logic verification checkpoint mapping
+                confidence = "High (Automatic)" if reaction_time <= STRESS_THRESHOLD else "Low (Delayed)"
             
             st.session_state.last_score = {
-                "correct": correct_count, "pct": accuracy_pct, "time": click_reaction_time, "confidence": confidence, "timeout": False
+                "correct": correct_count, "pct": accuracy_pct, "time": reaction_time, "confidence": confidence, "timeout": timeout_flag
             }
             
             st.session_state.project_data.append({
                 "Trial": len(st.session_state.project_data) + 1,
                 "Agent": current_user,
                 "Clip Code": st.session_state.active_video_index,
-                "Reaction Time (Seconds)": click_reaction_time,
+                "Reaction Time (Seconds)": min(reaction_time, HARD_TIME_LIMIT),
                 "Accuracy Score (%)": accuracy_pct,
                 "Confidence Metric": confidence,
                 "Correct Answers": f"{correct_count}/4"
             })
             st.session_state.stage = "results"
             st.rerun()
+
+    while time_remaining > 0 and st.session_state.stage == "interrogating":
+        elapsed_time = time.time() - st.session_state.start_time
+        time_remaining = max(0.0, HARD_TIME_LIMIT - elapsed_time)
+        timer_placeholder.progress(time_remaining / HARD_TIME_LIMIT, text=f"⏳ CRITICAL BOUNDARY COUNTDOWN: {round(time_remaining, 1)}s remaining!")
+        time.sleep(0.1)
+        
+    if time_remaining <= 0 and st.session_state.stage == "interrogating":
+        st.session_state.last_score = {"correct": 0, "pct": 0, "time": HARD_TIME_LIMIT, "confidence": "Expired (Timeout)", "timeout": True}
+        st.session_state.project_data.append({
+            "Trial": len(st.session_state.project_data) + 1, "Agent": current_user, "Clip Code": st.session_state.active_video_index,
+            "Reaction Time (Seconds)": HARD_TIME_LIMIT, "Accuracy Score (%)": 0, "Confidence Metric": "Expired (Timeout)", "Correct Answers": "0/4"
+        })
+        st.session_state.stage = "results"
+        st.rerun()
 
 # --- STEP 2b: FEEDBACK SCREEN ---
 elif st.session_state.stage == "results":
@@ -171,11 +156,8 @@ elif st.session_state.stage == "results":
     if ls.get("timeout", False):
         st.error(f"❌ RECALL RECORDING FAILED: Window limit exceeded.")
     else:
-        if ls['correct'] == "Voice Logged":
-            st.success("🎤 Audio log preserved securely for automated diagnostic processing!")
-        else:
-            st.metric(label="Total Identification Accuracy", value=f"{ls['pct']}%", delta=f"{ls['correct']}/4 Correct")
-        st.write(f"⏱ boardwalk **Total Retrieval Speed:** {ls['time']} seconds | **Confidence Allocation:** {ls['confidence']}")
+        st.metric(label="Total Identification Accuracy", value=f"{ls['pct']}%", delta=f"{ls['correct']}/4 Correct")
+        st.write(f"⏱️ **Total Retrieval Speed:** {ls['time']} seconds | **Confidence Allocation:** {ls['confidence']}")
     
     if st.button("🔄 Proceed to Next Unique Trial", key="next_trial_btn"):
         st.session_state.active_video_index = None
@@ -204,3 +186,13 @@ if st.session_state.project_data and st.session_state.stage == "viewing":
     st.download_button(label="📥 Export Full Forensic Dataset (.CSV)", data=csv_data, file_name="project_memory_data.csv", mime="text/csv", use_container_width=True)
     st.dataframe(df.set_index("Trial"), use_container_width=True)
 
+# --- SYSTEM CACHE WIPE TOOL ---
+st.markdown("---")
+if st.button("🧹 Wipe System State Cache (Reset All Data)", use_container_width=True):
+    st.session_state.project_data = []
+    st.session_state.played_clips = []
+    st.session_state.active_video_index = None
+    st.session_state.stage = "viewing"
+    st.session_state.last_score = {"correct": 0, "pct": 0, "time": 0.0, "confidence": "None", "timeout": False}
+    st.toast("System cache cleared successfully!", icon="🧹")
+    st.rerun()
