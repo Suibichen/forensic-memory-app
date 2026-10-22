@@ -3,10 +3,10 @@ import time
 import pandas as pd
 import random
 
-st.set_page_config(page_title="Project M.E.M.O.RY", page_icon="🚨")
+st.set_page_config(page_title="Project M.E.M.O.R.Y", page_icon="🚨")
 
 st.title("🚨 Project M.E.M.O.R.Y: Live Video Forensic Unit")
-st.write("Evaluating eyewitness short-term memory encoding via un-controlled, single-exposure live video playback.")
+st.write("Evaluating eyewitness short-term memory encoding via counterbalanced, single-exposure live video playback.")
 
 # 1. Initialize data storage and randomized states safely
 if "project_data" not in st.session_state:
@@ -15,6 +15,8 @@ if "stage" not in st.session_state:
     st.session_state.stage = "viewing"  # Stages: viewing, interrogating, results
 if "last_score" not in st.session_state or not st.session_state.last_score:
     st.session_state.last_score = {"correct": 0, "pct": 0, "time": 0.0, "confidence": "None", "timeout": False}
+if "active_video_index" not in st.session_state:
+    st.session_state.active_video_index = None
 
 # --- ADMINISTRATIVE SIDEBAR OPTIONS ---
 st.sidebar.header("👤 Profile & Thresholds")
@@ -24,17 +26,40 @@ STRESS_THRESHOLD = st.sidebar.slider("High-Confidence Time Limit (Seconds)", 3.0
 HARD_TIME_LIMIT = 20.0
 st.sidebar.error(f"🛑 CRITICAL TIME BOUND: {HARD_TIME_LIMIT}s")
 
+# --- NEW: MULTI-VIDEO POOL MATRIX TO ELIMINATE ORDER EFFECTS ---
+# Replace these URLs with your real hosted raw .mp4 clip links!
+VIDEO_POOL = {
+    "Clip_A": {
+        "url": "https://github.com/Suibichen/forensic-memory-app/raw/refs/heads/main/Security%20Camera%20Alleyway%20Chase.mp4", # Replace with your original clip link
+        "jacket": "Red", "jeans": "Blue", "cap": "Black", "shoes": "Green"
+    },
+    "Clip_B": {
+        "url": "https://github.com/Suibichen/forensic-memory-app/raw/refs/heads/main/Alleyway%20Chase.mp4", # Replace with Video Variant 2 link
+        "jacket": "Blue", "jeans": "Black", "cap": "Green", "shoes": "Red"
+    },
+    "Clip_C": {
+        "url": "https://github.com/Suibichen/forensic-memory-app/raw/refs/heads/main/Screen_Recording_20261022_202310_Chrome.mp4", # Replace with Video Variant 3 link
+        "jacket": "Green", "jeans": "Red", "cap": "Blue", "shoes": "Black"
+    }
+}
+
+COLORS_POOL = ["Black", "Blue", "Red", "Green"]
+
 # --- STEP 1: LIVE VIDEO VIEWING ---
 if st.session_state.stage == "viewing":
     st.subheader(f"Step 1: Analyze the Evidence ({current_user})")
     
-    st.markdown("### 🎬 Surveillance Footage Feed")
-    st.warning("⚠️ ATTENTION: Watch the suspect closely! You cannot pause, skip, or rewind. Watch carefully!")
+    # Randomly select a video clip configuration at the start of the trial loop
+    if st.session_state.active_video_index is None:
+        st.session_state.active_video_index = random.choice(list(VIDEO_POOL.keys()))
+        
+    active_clip = VIDEO_POOL[st.session_state.active_video_index]
     
-    # 🎥 CLEAN CONFIGURATION FIX: Removed buggy parameters to avoid server crashes.
-    # REPLACE the link below with your actual raw GitHub link!
-    VIDEO_URL = "https://github.com/Suibichen/forensic-memory-app/raw/refs/heads/main/Security%20Camera%20Alleyway%20Chase.mp4" 
-    st.video(VIDEO_URL, format="video/mp4", autoplay=True, loop=False)
+    st.markdown("### 🎬 Surveillance Footage Feed")
+    st.warning("⚠️ COUNTERBALANCED MATRIX ACTIVE: The clothing configurations change dynamically per trial to reduce memory order bias.")
+    
+    # Streams the randomly chosen video clip file flawlessly
+    st.video(active_clip["url"], format="video/mp4", autoplay=True, loop=False)
     
     st.info("Once the clip finishes playing, click the button below instantly to open the case matrix.")
     
@@ -56,13 +81,12 @@ elif st.session_state.stage == "interrogating":
     st.markdown("---")
     st.markdown("### 📝 Option B: Rapid-Click Interface")
     
-    # Ground truth values for your specific generated alleyway suspect clip
-    TRUE_JACKET = "Red"
-    TRUE_JEANS = "Blue"
-    TRUE_CAP = "Black"
-    TRUE_SHOES = "Green"
-    
-    COLORS_POOL = ["Black", "Blue", "Red", "Green"]
+    # Retrieve the locked truth answers for whichever random clip played in Step 1
+    active_clip = VIDEO_POOL[st.session_state.active_video_index]
+    TRUE_JACKET = active_clip["jacket"]
+    TRUE_JEANS = active_clip["jeans"]
+    TRUE_CAP = active_clip["cap"]
+    TRUE_SHOES = active_clip["shoes"]
     
     with st.form("forensic_matrix_form"):
         col_a, col_b = st.columns(2)
@@ -103,6 +127,7 @@ elif st.session_state.stage == "interrogating":
             st.session_state.project_data.append({
                 "Trial": len(st.session_state.project_data) + 1,
                 "Agent": current_user,
+                "Clip Used": st.session_state.active_video_index,
                 "Reaction Time (Seconds)": logged_time,
                 "Accuracy Score (%)": accuracy_pct,
                 "Confidence Metric": confidence,
@@ -123,6 +148,8 @@ elif st.session_state.stage == "results":
         st.write(f"⏱️ **Total Retrieval Speed:** {ls['time']} seconds | **Confidence Allocation:** {ls['confidence']}")
     
     if st.button("🔄 Proceed to Next Unique Trial", key="next_trial_btn"):
+        # Reset the index pointer so a completely new random clip is pulled for the next run
+        st.session_state.active_video_index = None
         st.session_state.stage = "viewing"
         st.rerun()
 
@@ -146,12 +173,23 @@ if st.session_state.project_data and st.session_state.stage != "interrogating":
         st.scatter_chart(data=df, x="Reaction Time (Seconds)", y="Accuracy Score (%)")
         
     st.subheader("📋 Comprehensive Trial Registry Log")
+    
+    # NEW: Formatted CSV Data Download Trigger Hook Option
+    csv_data = df.to_csv(index=False).encode('utf-8')
+    st.download_button(
+        label="📥 Export Full Forensic Dataset (.CSV)",
+        data=csv_data,
+        file_name="project_memory_data.csv",
+        mime="text/csv",
+        use_container_width=True
+    )
     st.dataframe(df.set_index("Trial"), use_container_width=True)
 
 # --- SYSTEM CACHE WIPE TOOL ---
 st.markdown("---")
 if st.button("🧹 Wipe System State Cache (Reset All Data)", use_container_width=True):
     st.session_state.project_data = []
+    st.session_state.active_video_index = None
     st.session_state.stage = "viewing"
     st.session_state.last_score = {"correct": 0, "pct": 0, "time": 0.0, "confidence": "None", "timeout": False}
     st.toast("System cache cleared successfully!", icon="🧹")
