@@ -33,7 +33,7 @@ if st.session_state.stage == "viewing":
     
     # 🎥 CLEAN CONFIGURATION FIX: Removed buggy parameters to avoid server crashes.
     # REPLACE the link below with your actual raw GitHub link!
-    VIDEO_URL = "https://w3schools.com" 
+    VIDEO_URL = "https://github.com/Suibichen/forensic-memory-app/raw/refs/heads/main/Security%20Camera%20Alleyway%20Chase.mp4" 
     st.video(VIDEO_URL, format="video/mp4", autoplay=True, loop=False)
     
     st.info("Once the clip finishes playing, click the button below instantly to open the case matrix.")
