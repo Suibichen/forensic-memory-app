@@ -17,14 +17,20 @@ if "last_score" not in st.session_state or not st.session_state.last_score:
     st.session_state.last_score = {"correct": 0, "pct": 0, "time": 0.0, "confidence": "None", "timeout": False}
 if "active_video_index" not in st.session_state:
     st.session_state.active_video_index = None
+if "played_clips" not in st.session_state:
+    st.session_state.played_clips = []
 
-# --- SIDEBAR PARAMETERS ---
+# --- ADMINISTRATIVE SIDEBAR OPTIONS ---
 st.sidebar.header("👤 Profile Settings")
 current_user = st.sidebar.selectbox("Select Active Agent Name:", ["Agent You", "Agent Sister", "Guest Agent"])
-STRESS_THRESHOLD = 8.0  
-HARD_TIME_LIMIT = 20.0    
 
-# --- MULTI-VIDEO POOL MATRIX (Counterbalancing) ---
+# FIXED LOCK-IN VALUE: Set default parameters strictly to 10.0 seconds
+STRESS_THRESHOLD = st.sidebar.slider("High-Confidence Time Limit (Seconds)", 5.0, 20.0, 10.0)
+
+HARD_TIME_LIMIT = 20.0    
+st.sidebar.error(f"🛑 CRITICAL TIME BOUND: {HARD_TIME_LIMIT}s")
+
+# --- MULTI-VIDEO POOL MATRIX ---
 VIDEO_POOL = {
     "Clip_A": {
         "url": "https://github.com/Suibichen/forensic-memory-app/raw/refs/heads/main/Security%20Camera%20Alleyway%20Chase.mp4", # Replace with your original clip link
@@ -42,17 +48,25 @@ VIDEO_POOL = {
 
 COLORS_POOL = ["Black", "Blue", "Red", "Green"]
 
-# --- STAGE 1: SYSTEM INITIALIZATION ---
+# --- STEP 1: SYSTEM INITIALIZATION ---
 if st.session_state.stage == "viewing":
     st.subheader(f"Step 1: Setup Surveillance System ({current_user})")
-    st.session_state.active_video_index = random.choice(list(VIDEO_POOL.keys()))
+    
+    if st.session_state.active_video_index is None:
+        available_clips = [c for c in VIDEO_POOL.keys() if c not in st.session_state.played_clips]
+        if not available_clips:
+            st.session_state.played_clips = []
+            available_clips = list(VIDEO_POOL.keys())
+            
+        st.session_state.active_video_index = random.choice(available_clips)
+        st.session_state.played_clips.append(st.session_state.active_video_index)
     
     st.info("🎯 Ready to stream security footprint footage. The video will permanently self-destruct after 5 seconds.")
     if st.button("🎬 Stream Evidence (Single Exposure)"):
         st.session_state.stage = "video_playing"
         st.rerun()
 
-# --- STAGE 2: FIXED 5-SECOND EXPOSURE ---
+# --- STEP 2: FIXED 5-SECOND EXPOSURE ---
 elif st.session_state.stage == "video_playing":
     st.subheader("🚨 STREAMING SURVEILLANCE FEED...")
     active_clip = VIDEO_POOL[st.session_state.active_video_index]
@@ -63,19 +77,15 @@ elif st.session_state.stage == "video_playing":
     st.session_state.stage = "interrogating"
     st.rerun()
 
-# --- STAGE 3: INTERROGATION SYSTEM WITH REACTION TIMER CLOCK ---
+# --- STEP 3: INTERROGATION SYSTEM WITH CLOCK LOOP ---
 elif st.session_state.stage == "interrogating":
     st.subheader(f"Step 2: Cross-Examination Registry ({current_user})")
     st.error("🔒 EVIDENCE DESTRUCTED: The source video file has been systematically deleted from memory.")
     
-    # Calculate initial countdown parameters
     elapsed_time = time.time() - st.session_state.start_time
     time_remaining = max(0.0, HARD_TIME_LIMIT - elapsed_time)
-    
-    # FIXED OPTIMIZATION: Empty placeholder container hook created to mount the active timer
     timer_placeholder = st.empty()
     
-    # Render static options form architecture
     active_clip = VIDEO_POOL[st.session_state.active_video_index]
     with st.form("forensic_matrix_form"):
         col_a, col_b = st.columns(2)
@@ -103,6 +113,8 @@ elif st.session_state.stage == "interrogating":
                 if ans_cap == active_clip["cap"]: correct_count += 1
                 if ans_shoes == active_clip["shoes"]: correct_count += 1
                 accuracy_pct = int((correct_count / 4) * 100)
+                
+                # Active logic verification checkpoint mapping
                 confidence = "High (Automatic)" if reaction_time <= STRESS_THRESHOLD else "Low (Delayed)"
             
             st.session_state.last_score = {
@@ -121,21 +133,13 @@ elif st.session_state.stage == "interrogating":
             st.session_state.stage = "results"
             st.rerun()
 
-    # --- THE RUNNING CLOCK LOGIC LOOP ---
-    # This active while-loop continuously forces the web app framework to update the progress bar visually
     while time_remaining > 0 and st.session_state.stage == "interrogating":
         elapsed_time = time.time() - st.session_state.start_time
         time_remaining = max(0.0, HARD_TIME_LIMIT - elapsed_time)
-        
-        # Inject an updated shrinking bar directly into our dedicated layout placeholder
-        timer_placeholder.progress(
-            time_remaining / HARD_TIME_LIMIT, 
-            text=f"⏳ CRITICAL BOUNDARY COUNTDOWN: {round(time_remaining, 1)}s remaining!"
-        )
-        time.sleep(0.1) # Short interval delay to conserve device system memory
+        timer_placeholder.progress(time_remaining / HARD_TIME_LIMIT, text=f"⏳ CRITICAL BOUNDARY COUNTDOWN: {round(time_remaining, 1)}s remaining!")
+        time.sleep(0.1)
         
     if time_remaining <= 0 and st.session_state.stage == "interrogating":
-        # Process an automatic fallback timeout data save state if clock finishes counting down before submit
         st.session_state.last_score = {"correct": 0, "pct": 0, "time": HARD_TIME_LIMIT, "confidence": "Expired (Timeout)", "timeout": True}
         st.session_state.project_data.append({
             "Trial": len(st.session_state.project_data) + 1, "Agent": current_user, "Clip Code": st.session_state.active_video_index,
@@ -144,7 +148,7 @@ elif st.session_state.stage == "interrogating":
         st.session_state.stage = "results"
         st.rerun()
 
-# --- STAGE 4: FEEDBACK SUMMARY ---
+# --- STEP 2b: FEEDBACK SCREEN ---
 elif st.session_state.stage == "results":
     st.subheader("Step 2b: Interrogation Analysis Summary")
     ls = st.session_state.last_score
@@ -160,7 +164,7 @@ elif st.session_state.stage == "results":
         st.session_state.stage = "viewing"
         st.rerun()
 
-# --- ANALYTICS DISPLAY PANELS (Visible on Step 1) ---
+# --- ANALYTICS DISPLAY PANELS ---
 if st.session_state.project_data and st.session_state.stage == "viewing":
     st.divider()
     df = pd.DataFrame(st.session_state.project_data)
@@ -181,3 +185,14 @@ if st.session_state.project_data and st.session_state.stage == "viewing":
     csv_data = df.to_csv(index=False).encode('utf-8')
     st.download_button(label="📥 Export Full Forensic Dataset (.CSV)", data=csv_data, file_name="project_memory_data.csv", mime="text/csv", use_container_width=True)
     st.dataframe(df.set_index("Trial"), use_container_width=True)
+
+# --- SYSTEM CACHE WIPE TOOL ---
+st.markdown("---")
+if st.button("🧹 Wipe System State Cache (Reset All Data)", use_container_width=True):
+    st.session_state.project_data = []
+    st.session_state.played_clips = []
+    st.session_state.active_video_index = None
+    st.session_state.stage = "viewing"
+    st.session_state.last_score = {"correct": 0, "pct": 0, "time": 0.0, "confidence": "None", "timeout": False}
+    st.toast("System cache cleared successfully!", icon="🧹")
+    st.rerun()
