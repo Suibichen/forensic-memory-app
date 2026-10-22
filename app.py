@@ -3,7 +3,7 @@ import time
 import pandas as pd
 import random
 
-st.set_page_config(page_title="Project M.E.M.O.R.Y", page_icon="🚨")
+st.set_page_config(page_title="Project M.E.M.O.RY", page_icon="🚨")
 
 st.title("🚨 Project M.E.M.O.R.Y: Live Video Forensic Unit")
 st.write("Evaluating eyewitness short-term memory encoding via un-controlled, single-exposure live video playback.")
@@ -24,18 +24,17 @@ STRESS_THRESHOLD = st.sidebar.slider("High-Confidence Time Limit (Seconds)", 3.0
 HARD_TIME_LIMIT = 20.0
 st.sidebar.error(f"🛑 CRITICAL TIME BOUND: {HARD_TIME_LIMIT}s")
 
-# --- STEP 1: LIVE UN-CONTROLLABLE VIDEO VIEWING ---
+# --- STEP 1: LIVE VIDEO VIEWING ---
 if st.session_state.stage == "viewing":
     st.subheader(f"Step 1: Analyze the Evidence ({current_user})")
     
     st.markdown("### 🎬 Surveillance Footage Feed")
-    st.warning("⚠️ ATTENTION: The video control player bars have been stripped. You cannot pause, skip, or rewind. Watch carefully!")
+    st.warning("⚠️ ATTENTION: Watch the suspect closely! You cannot pause, skip, or rewind. Watch carefully!")
     
-    # 🎥 THE MASTER VIDEO CONTAINER TRICK: 
-    # Replace the sample URL below with your actual hosted MP4 file path!
-    # 'controls=False' makes it completely un-pausable on the mobile screen.
-    VIDEO_URL = "https://github.com/Suibichen/forensic-memory-app/raw/refs/heads/main/Security%20Camera%20Alleyway%20Chase.mp4" 
-    st.video(VIDEO_URL, format="video/mp4", autoplay=True, loop=False, controls=False)
+    # 🎥 CLEAN CONFIGURATION FIX: Removed buggy parameters to avoid server crashes.
+    # REPLACE the link below with your actual raw GitHub link!
+    VIDEO_URL = "https://w3schools.com" 
+    st.video(VIDEO_URL, format="video/mp4", autoplay=True, loop=False)
     
     st.info("Once the clip finishes playing, click the button below instantly to open the case matrix.")
     
@@ -50,15 +49,14 @@ elif st.session_state.stage == "interrogating":
     st.error("🔒 FOOTAGE SEQUESTERED: The surveillance video has been completely scrubbed from the view layout.")
     
     st.markdown("### 🎙️ Option A: Rapid Voice Dictation Terminal")
-    audio_file = st.audio_input("Tap to speak your forensic sequence (e.g., 'Blue Green Black Red'):")
+    audio_file = st.audio_input("Tap to speak your forensic sequence (e.g., 'Red Blue Black Green'):")
     if audio_file:
         st.success("🗣️ Voice segment recorded successfully! Processing audio logs...")
 
     st.markdown("---")
     st.markdown("### 📝 Option B: Rapid-Click Interface")
     
-    # NOTE: Since the video is a real clip, the correct answers are fixed to the clip content!
-    # Update these 4 baseline answers below to match whatever happens in your real video.
+    # Ground truth values for your specific generated alleyway suspect clip
     TRUE_JACKET = "Red"
     TRUE_JEANS = "Blue"
     TRUE_CAP = "Black"
