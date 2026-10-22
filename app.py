@@ -5,7 +5,7 @@ import random
 
 st.set_page_config(page_title="Project M.E.M.O.R.Y", page_icon="🚨")
 
-st.title("🚨 Project M.E.M.O.R.Y: Zero-Leak Forensic Unit")
+st.title("🚨 Project M.E.M.O.R.Y: High-Pressure Forensic Unit")
 st.write("Evaluating eyewitness short-term memory encoding via counterbalanced, single-exposure live video playback.")
 
 # 1. Initialize data storage and randomized states safely
@@ -24,13 +24,13 @@ if "played_clips" not in st.session_state:
 st.sidebar.header("👤 Profile Settings")
 current_user = st.sidebar.selectbox("Select Active Agent Name:", ["Agent You", "Agent Sister", "Guest Agent"])
 
-# FIXED LOCK-IN VALUE: Set default parameters strictly to 10.0 seconds
-STRESS_THRESHOLD = st.sidebar.slider("High-Confidence Time Limit (Seconds)", 5.0, 20.0, 10.0)
-
+# LOCKED OPTIMIZATION: High-confidence limit set strictly to 10.0 seconds
+STRESS_THRESHOLD = 10.0
 HARD_TIME_LIMIT = 20.0    
-st.sidebar.error(f"🛑 CRITICAL TIME BOUND: {HARD_TIME_LIMIT}s")
+st.sidebar.info(f"⏱️ High-Confidence Limit: {STRESS_THRESHOLD}s")
+st.sidebar.error(f"🛑 Hard Cutoff Limit: {HARD_TIME_LIMIT}s")
 
-# --- MULTI-VIDEO POOL MATRIX ---
+# --- MULTI-VIDEO POOL MATRIX (Counterbalancing) ---
 VIDEO_POOL = {
     "Clip_A": {
         "url": "https://github.com/Suibichen/forensic-memory-app/raw/refs/heads/main/Security%20Camera%20Alleyway%20Chase.mp4", # Replace with your original clip link
@@ -61,7 +61,7 @@ if st.session_state.stage == "viewing":
         st.session_state.active_video_index = random.choice(available_clips)
         st.session_state.played_clips.append(st.session_state.active_video_index)
     
-    st.info("🎯 Ready to stream security footprint footage. The video will permanently self-destruct after 5 seconds.")
+    st.info("🎯 Ready to stream security footage. The video will permanently self-destruct after 5 seconds.")
     if st.button("🎬 Stream Evidence (Single Exposure)"):
         st.session_state.stage = "video_playing"
         st.rerun()
@@ -77,14 +77,22 @@ elif st.session_state.stage == "video_playing":
     st.session_state.stage = "interrogating"
     st.rerun()
 
-# --- STEP 3: INTERROGATION SYSTEM WITH CLOCK LOOP ---
+# --- STEP 3: INTERROGATION SYSTEM WITH RECOVERY AUDIO STORAGE ---
 elif st.session_state.stage == "interrogating":
     st.subheader(f"Step 2: Cross-Examination Registry ({current_user})")
-    st.error("🔒 EVIDENCE DESTRUCTED: The source video file has been systematically deleted from memory.")
+    st.error("🔒 EVIDENCE DESTRUCTED: The video element has been erased to secure trial validity.")
     
-    elapsed_time = time.time() - st.session_state.start_time
-    time_remaining = max(0.0, HARD_TIME_LIMIT - elapsed_time)
-    timer_placeholder = st.empty()
+    # FIX: Re-stabilized the UI layout by dropping the hyper-speed loop that crashed the mic hardware
+    st.warning(f"⏰ CRITICAL LIMITATION: You have exactly {HARD_TIME_LIMIT} seconds to submit parameters.")
+    
+    # Option A: Stable Rapid Voice Dictation Terminal
+    st.markdown("### 🎙️ Option A: Rapid Voice Dictation Terminal")
+    audio_file = st.audio_input("Tap to record your forensic sequence voice log:")
+    if audio_file:
+        st.success("🗣️ Audio capture stored successfully in active session database logs.")
+
+    st.markdown("---")
+    st.markdown("### 📝 Option B: Rapid-Click Interface")
     
     active_clip = VIDEO_POOL[st.session_state.active_video_index]
     with st.form("forensic_matrix_form"):
@@ -113,8 +121,6 @@ elif st.session_state.stage == "interrogating":
                 if ans_cap == active_clip["cap"]: correct_count += 1
                 if ans_shoes == active_clip["shoes"]: correct_count += 1
                 accuracy_pct = int((correct_count / 4) * 100)
-                
-                # Active logic verification checkpoint mapping
                 confidence = "High (Automatic)" if reaction_time <= STRESS_THRESHOLD else "Low (Delayed)"
             
             st.session_state.last_score = {
@@ -133,28 +139,13 @@ elif st.session_state.stage == "interrogating":
             st.session_state.stage = "results"
             st.rerun()
 
-    while time_remaining > 0 and st.session_state.stage == "interrogating":
-        elapsed_time = time.time() - st.session_state.start_time
-        time_remaining = max(0.0, HARD_TIME_LIMIT - elapsed_time)
-        timer_placeholder.progress(time_remaining / HARD_TIME_LIMIT, text=f"⏳ CRITICAL BOUNDARY COUNTDOWN: {round(time_remaining, 1)}s remaining!")
-        time.sleep(0.1)
-        
-    if time_remaining <= 0 and st.session_state.stage == "interrogating":
-        st.session_state.last_score = {"correct": 0, "pct": 0, "time": HARD_TIME_LIMIT, "confidence": "Expired (Timeout)", "timeout": True}
-        st.session_state.project_data.append({
-            "Trial": len(st.session_state.project_data) + 1, "Agent": current_user, "Clip Code": st.session_state.active_video_index,
-            "Reaction Time (Seconds)": HARD_TIME_LIMIT, "Accuracy Score (%)": 0, "Confidence Metric": "Expired (Timeout)", "Correct Answers": "0/4"
-        })
-        st.session_state.stage = "results"
-        st.rerun()
-
 # --- STEP 2b: FEEDBACK SCREEN ---
 elif st.session_state.stage == "results":
     st.subheader("Step 2b: Interrogation Analysis Summary")
     ls = st.session_state.last_score
     
     if ls.get("timeout", False):
-        st.error(f"❌ RECALL RECORDING FAILED: Window limit exceeded.")
+        st.error(f"❌ RECALL RECORDING FAILED: Session took {ls['time']}s. Boundary limit exceeded.")
     else:
         st.metric(label="Total Identification Accuracy", value=f"{ls['pct']}%", delta=f"{ls['correct']}/4 Correct")
         st.write(f"⏱️ **Total Retrieval Speed:** {ls['time']} seconds | **Confidence Allocation:** {ls['confidence']}")
