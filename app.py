@@ -2,15 +2,14 @@ import streamlit as st
 import time
 import pandas as pd
 import random
+from streamlit_gsheets import GSheetsConnection
 
 st.set_page_config(page_title="Project M.E.M.O.R.Y", page_icon="🚨")
 
-st.title("🚨 Project M.E.M.O.R.Y: Zero-Leak Forensic Unit")
+st.title("🚨 Project M.E.M.O.R.Y: Global Forensic Unit")
 st.write("Evaluating eyewitness short-term memory encoding via counterbalanced, single-exposure live video playback.")
 
-# 1. Initialize data storage and randomized states safely
-if "project_data" not in st.session_state:
-    st.session_state.project_data = []
+# 1. Initialize structural states safely
 if "stage" not in st.session_state:
     st.session_state.stage = "viewing"  # Stages: viewing, video_playing, interrogating, results
 if "last_score" not in st.session_state or not st.session_state.last_score:
@@ -19,6 +18,12 @@ if "active_video_index" not in st.session_state:
     st.session_state.active_video_index = None
 if "played_clips" not in st.session_state:
     st.session_state.played_clips = []
+
+# --- CENTRALIZED CLOUD DATABASE CONNECTION ---
+try:
+    conn = st.connection("gsheets", type=GSheetsConnection)
+except Exception:
+    conn = None
 
 # --- ADMINISTRATIVE SIDEBAR OPTIONS ---
 st.sidebar.header("👤 Profile Settings")
@@ -32,15 +37,15 @@ st.sidebar.error(f"🛑 Hard Cutoff Limit: {HARD_TIME_LIMIT}s")
 # --- MULTI-VIDEO POOL MATRIX (Counterbalancing) ---
 VIDEO_POOL = {
     "Clip_A": {
-        "url": "https://github.com/Suibichen/forensic-memory-app/raw/refs/heads/main/Security%20Camera%20Alleyway%20Chase.mp4", # Replace with your original clip link
+        "url": "https://github.com",
         "jacket": "Red", "jeans": "Blue", "cap": "Black", "shoes": "Green"
     },
     "Clip_B": {
-        "url": "https://github.com/Suibichen/forensic-memory-app/raw/refs/heads/main/Alleyway%20Chase.mp4", # Replace with Video Variant 2 link
+        "url": "https://github.com",
         "jacket": "Blue", "jeans": "Black", "cap": "Green", "shoes": "Red"
     },
     "Clip_C": {
-        "url": "https://github.com/Suibichen/forensic-memory-app/raw/refs/heads/main/Screen_Recording_20261022_202310_Chrome.mp4", # Replace with Video Variant 3 link
+        "url": "https://github.com",
         "jacket": "Green", "jeans": "Red", "cap": "Blue", "shoes": "Black"
     }
 }
@@ -76,16 +81,13 @@ elif st.session_state.stage == "video_playing":
     st.session_state.stage = "interrogating"
     st.rerun()
 
-# --- STEP 3: INTERROGATION SYSTEM WITH ACTIVE PROGRESS TIMER CLOCK ---
+# --- STEP 3: INTERROGATION SYSTEM WITH CLOCK LOOP ---
 elif st.session_state.stage == "interrogating":
     st.subheader(f"Step 2: Cross-Examination Registry ({current_user})")
     st.error("🔒 EVIDENCE DESTRUCTED: The video element has been erased to secure trial validity.")
     
-    # Calculate active real-time countdown factors
     elapsed_time = time.time() - st.session_state.start_time
     time_remaining = max(0.0, HARD_TIME_LIMIT - elapsed_time)
-    
-    # Render placeholder hook to mount the dynamic progress bar
     timer_placeholder = st.empty()
     
     active_clip = VIDEO_POOL[st.session_state.active_video_index]
@@ -124,36 +126,49 @@ elif st.session_state.stage == "interrogating":
                 "correct": correct_count, "pct": accuracy_pct, "time": click_reaction_time, "confidence": confidence, "timeout": timeout_flag
             }
             
-            st.session_state.project_data.append({
-                "Trial": len(st.session_state.project_data) + 1,
+            new_row = pd.DataFrame([{
+                "Trial": random.randint(1000, 9999), 
                 "Agent": current_user,
                 "Clip Code": st.session_state.active_video_index,
                 "Reaction Time (Seconds)": min(click_reaction_time, HARD_TIME_LIMIT),
                 "Accuracy Score (%)": accuracy_pct,
                 "Confidence Metric": confidence,
                 "Correct Answers": f"{correct_count}/4"
-            })
+            }])
+            
+            if conn is not None:
+                try:
+                    existing_data = conn.read(worksheet="Sheet1", ttl=0)
+                    updated_df = pd.concat([existing_data, new_row], ignore_index=True)
+                    conn.update(worksheet="Sheet1", data=updated_df)
+                except Exception:
+                    pass
+            
             st.session_state.stage = "results"
             st.rerun()
 
-    # --- THE RUNNING CLOCK LOGIC LOOP ---
-    # With the mic removed, this loop smoothly shrinks the countdown bar without crashing
     while time_remaining > 0 and st.session_state.stage == "interrogating":
         elapsed_time = time.time() - st.session_state.start_time
         time_remaining = max(0.0, HARD_TIME_LIMIT - elapsed_time)
-        
-        timer_placeholder.progress(
-            time_remaining / HARD_TIME_LIMIT, 
-            text=f"⏳ CRITICAL BOUNDARY COUNTDOWN: {round(time_remaining, 1)}s remaining!"
-        )
+        timer_placeholder.progress(time_remaining / HARD_TIME_LIMIT, text=f"⏳ CRITICAL BOUNDARY COUNTDOWN: {round(time_remaining, 1)}s remaining!")
         time.sleep(0.1)
         
     if time_remaining <= 0 and st.session_state.stage == "interrogating":
         st.session_state.last_score = {"correct": 0, "pct": 0, "time": HARD_TIME_LIMIT, "confidence": "Expired (Timeout)", "timeout": True}
-        st.session_state.project_data.append({
-            "Trial": len(st.session_state.project_data) + 1, "Agent": current_user, "Clip Code": st.session_state.active_video_index,
+        
+        timeout_row = pd.DataFrame([{
+            "Trial": random.randint(1000, 9999), "Agent": current_user, "Clip Code": st.session_state.active_video_index,
             "Reaction Time (Seconds)": HARD_TIME_LIMIT, "Accuracy Score (%)": 0, "Confidence Metric": "Expired (Timeout)", "Correct Answers": "0/4"
-        })
+        }])
+        
+        if conn is not None:
+            try:
+                existing_data = conn.read(worksheet="Sheet1", ttl=0)
+                updated_df = pd.concat([existing_data, timeout_row], ignore_index=True)
+                conn.update(worksheet="Sheet1", data=updated_df)
+            except Exception:
+                pass
+                
         st.session_state.stage = "results"
         st.rerun()
 
@@ -173,35 +188,31 @@ elif st.session_state.stage == "results":
         st.session_state.stage = "viewing"
         st.rerun()
 
-# --- ANALYTICS DISPLAY PANELS (Visible on Step 1) ---
-if st.session_state.project_data and st.session_state.stage == "viewing":
+# --- ANALYTICS DISPLAY PANELS ---
+if st.session_state.stage == "viewing":
     st.divider()
-    df = pd.DataFrame(st.session_state.project_data)
-    col1, col2 = st.columns(2)
     
-    with col1:
-        st.subheader("🏆 Global Reflex Leaderboard")
-        max_acc = df["Accuracy Score (%)"].max()
-        top_tier = df[df["Accuracy Score (%)"] == max_acc]
-        leaderboard_df = top_tier.groupby("Agent")["Reaction Time (Seconds)"].min().reset_index()
-        st.dataframe(leaderboard_df.sort_values(by="Reaction Time (Seconds)").reset_index(drop=True), use_container_width=True)
+    if conn is not None:
+        try:
+            df = conn.read(worksheet="Sheet1", ttl=0)
+        except Exception:
+            df = pd.DataFrame()
+    else:
+        df = pd.DataFrame()
         
-    with col2:
-        st.subheader("📈 Statistical Overview")
-        st.scatter_chart(data=df, x="Reaction Time (Seconds)", y="Accuracy Score (%)")
+    if not df.empty and "Accuracy Score (%)" in df.columns:
+        col1, col2 = st.columns(2)
         
-    st.subheader("📋 Comprehensive Trial Registry Log")
-    csv_data = df.to_csv(index=False).encode('utf-8')
-    st.download_button(label="📥 Export Full Forensic Dataset (.CSV)", data=csv_data, file_name="project_memory_data.csv", mime="text/csv", use_container_width=True)
-    st.dataframe(df.set_index("Trial"), use_container_width=True)
-
-# --- SYSTEM CACHE WIPE TOOL ---
-st.markdown("---")
-if st.button("🧹 Wipe System State Cache (Reset All Data)", use_container_width=True):
-    st.session_state.project_data = []
-    st.session_state.played_clips = []
-    st.session_state.active_video_index = None
-    st.session_state.stage = "viewing"
-    st.session_state.last_score = {"correct": 0, "pct": 0, "time": 0.0, "confidence": "None", "timeout": False}
-    st.toast("System cache cleared successfully!", icon="🧹")
-    st.rerun()
+        with col1:
+            st.subheader("🏆 Global Reflex Leaderboard")
+            max_acc = df["Accuracy Score (%)"].max()
+            top_tier = df[df["Accuracy Score (%)"] == max_acc]
+            leaderboard_df = top_tier.groupby("Agent")["Reaction Time (Seconds)"].min().reset_index()
+            st.dataframe(leaderboard_df.sort_values(by="Reaction Time (Seconds)").reset_index(drop=True), use_container_width=True)
+            
+        with col2:
+            st.subheader("📈 Statistical Overview")
+            st.scatter_chart(data=df, x="Reaction Time (Seconds)", y="Accuracy Score (%)")
+            
+        st.subheader("📋 Comprehensive Global Trial Registry Log")
+        st.dataframe(df.set_index("Trial"), use_container_width=True)
